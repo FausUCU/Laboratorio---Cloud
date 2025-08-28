@@ -1,68 +1,43 @@
-// ====== CONFIG ======
-const API_BASE = "http://localhost:7071/api"; // ← cambia esto
+// URLs de tus Functions
+const getNewsUrl = "https://getnewsfunc-hgbgehfubxgbhyep.brazilsouth-01.azurewebsites.net/api/GetNews?code=7RE8KtCmEFWnMmouUCikvWBITygrV8rzZYoopyhQwNDnAzFuiUAcfw==";
+const logAccessUrl = "https://logaccessfunc-abg3f8aycthuhaa2.brazilsouth-01.azurewebsites.net/api/LogAccess";
 
-// ====== HELPERS ======
-function $(id) { return document.getElementById(id); }
-function setStatusOp(id) { $("opId").textContent = `op: ${id}`; }
+// Función para cargar titulares
+async function loadNews(country, category) {
+  try {
+    // 1. Llamada a GetNews con parámetros
+    const url = `${getNewsUrl}&country=${country}&category=${category}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("Error en GetNews");
 
-async function callGetNews(country, q) {
-const url = new URL(`${API_BASE}/GetNews`);
-if (country) url.searchParams.set("country", country);
-if (q) url.searchParams.set("q", q);
+    const news = await res.json();
 
+    // 2. Mostrar titulares en la lista
+    const list = document.getElementById("newsList");
+    list.innerHTML = "";
 
-const res = await fetch(url.toString(), {
-method: "GET",
-headers: { "Accept": "application/json" },
-// Importante: habilita CORS en la Function App para el dominio de tu Static Website
+    news.forEach(item => {
+      const li = document.createElement("li");
+      li.textContent = item.title; // GetNews devuelve { title }
+      list.appendChild(li);
+    });
+
+    // 3. Registrar acceso en LogAccess
+    await fetch(logAccessUrl, { method: "POST" });
+
+  } catch (err) {
+    console.error("Error cargando noticias:", err);
+    alert("No se pudieron cargar las noticias.");
+  }
+}
+
+// Captura el submit del formulario
+document.getElementById("filterForm").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const country = document.getElementById("country").value;
+  const category = document.getElementById("category").value;
+  loadNews(country, category);
 });
-if (!res.ok) throw new Error(`GetNews falló (${res.status})`);
-return res.json();
-}
 
-
-async function callLogAccess(operationId, extra = {}) {
-const res = await fetch(`${API_BASE}/LogAccess`, {
-method: "POST",
-headers: { "Content-Type": "application/json" },
-body: JSON.stringify({ operationId, ...extra }),
-});
-if (!res.ok) throw new Error(`LogAccess falló (${res.status})`);
-return res.json();
-}
-
-function renderHeadlines(headlines) {
-const ul = $("newsList");
-ul.innerHTML = "";
-for (const h of headlines) {
-const li = document.createElement("li");
-const title = h.title || "(sin título)";
-const source = h.source?.name ? ` — ${h.source.name}` : "";
-const link = h.url ? `<a href="${h.url}" target="_blank" rel="noopener">ver</a>` : "";
-li.innerHTML = `<strong>${title}</strong>${source}<br>${link}`;
-ul.appendChild(li);
-}
-}
-
-// ====== MAIN ======
-$("btnLoad").addEventListener("click", async () => {
-const operationId = crypto.randomUUID();
-setStatusOp(operationId);
-
-
-const country = $("country").value;
-const q = $("q").value.trim();
-
-
-try {
-const data = await callGetNews(country, q);
-const headlines = data?.articles || [];
-renderHeadlines(headlines);
-
-
-// Registrar acceso (no bloqueante)
-callLogAccess(operationId, { count: headlines.length, country, q }).catch(console.warn);
-} catch (err) {
-alert(err.message);
-}
-});
+// Cargar titulares automáticamente al iniciar la página
+window.onload = () => loadNews("us", "general");

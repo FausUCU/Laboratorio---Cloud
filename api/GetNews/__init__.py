@@ -1,20 +1,37 @@
 import azure.functions as func
-from azure.data.tables import TableServiceClient
 import os
+import requests
 import json
 
 async def main(req: func.HttpRequest) -> func.HttpResponse:
     try:
-        # Conexión a Table Storage
-        conn_str = os.environ["AzureWebJobsStorage"]
-        table_service = TableServiceClient.from_connection_string(conn_str)
-        table_client = table_service.get_table_client("NewsTable")
+        # Leer API Key desde Application Settings
+        api_key = os.environ["NEWSAPI_KEY"]
 
-        # Consultar todas las noticias
-        entities = table_client.query_entities("PartitionKey eq 'News'")
-        news_list = [{"title": e["Title"], "content": e["Content"]} for e in entities]
+        # Leer parámetros desde la query (con valores por defecto)
+        country = req.params.get("country", "us")
+        category = req.params.get("category", "technology")
 
-        return func.HttpResponse(json.dumps(news_list), mimetype="application/json", status_code=200)
+        # URL de NewsAPI
+        url = "https://newsapi.org/v2/top-headlines"
+        params = {
+            "country": country,
+            "category": category,
+            "apiKey": api_key
+        }
+
+        # Hacer la request a NewsAPI
+        response = requests.get(url, params=params)
+        data = response.json()
+
+        # Extraer solo titulares
+        headlines = [{"title": article["title"]} for article in data.get("articles", [])]
+
+        return func.HttpResponse(
+            json.dumps(headlines, ensure_ascii=False, indent=2),
+            mimetype="application/json",
+            status_code=200
+        )
 
     except Exception as e:
         return func.HttpResponse(f"Error: {str(e)}", status_code=500)

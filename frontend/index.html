@@ -2,77 +2,44 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Portal de Noticias</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 2rem; }
-    input { margin: 0.5rem; }
-    button { margin-left: 0.5rem; }
-    li { margin-bottom: 0.5rem; }
-  </style>
+  <title>Mini News Portal</title>
 </head>
 <body>
-  <h1>Noticias</h1>
+  <h1>Mini News Portal</h1>
 
-  <!-- Formulario para agregar noticia -->
-  <div>
-    <input id="title" placeholder="Título">
-    <input id="content" placeholder="Contenido">
-    <button onclick="addNews()">Agregar Noticia</button>
-  </div>
+  <!-- Formulario para elegir parámetros -->
+  <form id="filterForm">
+    <label>
+      País:
+      <select id="country">
+        <option value="us">🇺🇸 Estados Unidos</option>
+        <option value="uy">🇺🇾 Uruguay</option>
+        <option value="ar">🇦🇷 Argentina</option>
+        <option value="br">🇧🇷 Brasil</option>
+        <option value="mx">🇲🇽 México</option>
+        <option value="gb">🇬🇧 Reino Unido</option>
+      </select>
+    </label>
 
-  <h2>Lista de noticias</h2>
+    <label>
+      Categoría:
+      <select id="category">
+        <option value="general">General</option>
+        <option value="business">Negocios</option>
+        <option value="entertainment">Entretenimiento</option>
+        <option value="health">Salud</option>
+        <option value="science">Ciencia</option>
+        <option value="sports">Deportes</option>
+        <option value="technology">Tecnología</option>
+      </select>
+    </label>
+
+    <button type="submit">Cargar Noticias</button>
+  </form>
+
+  <h2>Titulares</h2>
   <ul id="newsList"></ul>
 
-  <script>
-    const apiBase = "http://localhost:7071/api";
-
-    // Función para cargar noticias
-    async function loadNews() {
-      try {
-        const res = await fetch(`${apiBase}/GetNews`);
-        const news = await res.json();
-        const list = document.getElementById("newsList");
-        list.innerHTML = "";
-        news.forEach(item => {
-          const li = document.createElement("li");
-          li.textContent = `${item.title}: ${item.content}`;
-          list.appendChild(li);
-        });
-      } catch (err) {
-        console.error("Error cargando noticias:", err);
-      }
-    }
-
-    // Función para agregar noticia
-    async function addNews() {
-      const title = document.getElementById("title").value;
-      const content = document.getElementById("content").value;
-
-      if (!title || !content) {
-        alert("Completa título y contenido");
-        return;
-      }
-
-      try {
-        await fetch(`${apiBase}/AddNews`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ title, content })
-        });
-
-        // Limpiar inputs
-        document.getElementById("title").value = "";
-        document.getElementById("content").value = "";
-
-        // Recargar lista de noticias
-        loadNews();
-      } catch (err) {
-        console.error("Error agregando noticia:", err);
-      }
-    }
-
-    // Cargar noticias al iniciar
-    loadNews();
-  </script>
+  <script src="script.js"></script>
 </body>
 </html>
